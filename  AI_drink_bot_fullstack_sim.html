@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drink Suggestion Bot - Simulated Full-Stack</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f7f7f7;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .container {
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.10);
+      max-width: 800px; /* Increased width */
+      width: 100%;
+      overflow: hidden;
+      margin: 32px 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid #eee;
+      background: #f8f9fa;
+    }
+    .tab-nav button {
+      flex: 1;
+      padding: 15px 0;
+      border: none;
+      background: none;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #777;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .tab-nav button.active {
+      color: #6366f1;
+      border-bottom: 3px solid #6366f1;
+      background: #fff;
+    }
+    .tab-content {
+      padding: 20px;
+      display: none; /* Hidden by default */
+      flex-direction: column;
+      flex: 1;
+      min-height: 400px; /* Ensure content area is visible */
+    }
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Customer Bot Specific Styles */
+    .welcome {
+      color: #333;
+      padding: 28px 24px 12px 24px;
+      text-align: center;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-radius: 0 0 24px 24px;
+      margin-bottom: 0;
+    }
+    .quick-occasions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 24px 0 24px;
+      background: #f8f9fa;
+      justify-content: center;
+    }
+    .occasion-btn {
+      background: #f3f4f6;
+      color: #333;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      transition: background 0.2s, color 0.2s;
+    }
+    .occasion-btn:hover, .occasion-btn:active {
+      background: #6366f1;
+      color: #fff;
+    }
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 24px 0 24px;
+      min-height: 220px;
+      max-height: 320px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 400;
+      margin: 8px 0;
+      animation: fade 0.4s ease;
+      word-break: break-word;
+    }
+    .bubble.user {
+      background: #e0e7ff;
+      color: #222;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .bubble.bot {
+      background: #fff;
+      color: #2c3e50;
+      align-self: flex-start;
+      border: 1px solid #ececec;
+    }
+    .bubble.bot.thinking {
+      background: #f0f4f7;
+      color: #666;
+      font-style: italic;
+      animation: pulse 1.5s infinite ease-in-out;
+    }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 1; }
+      100% { opacity: 0.8; }
+    }
+    .suggestion-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 24px 18px 24px;
+      background: #f8f9fa;
+      justify-content: center;
+    }
+    .drink-btn {
+      background: #e0e7ff;
+      color: #333;
+      padding: 12px 20px;
+      border-radius: 25px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: background 0.2s, color 0.2s;
+    }
+    .drink-btn.selected, .drink-btn:active {
+      background: #6366f1;
+      color: #fff;
+    }
+    .input-container {
+      padding: 18px 24px;
+      background: #f8f9fa;
+      border-top: 1px solid #ececec;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .input-field {
+      flex: 1;
+      padding: 12px 18px;
+      border: 2px solid #ececec;
+      background: #fff;
+      border-radius: 20px;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #2c3e50;
+    }
+    .input-field::placeholder { color: #aaa; font-weight: 400; }
+    .input-field:disabled { opacity: 0.7; cursor: not-allowed; }
+    .send-btn, .reset-btn {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0; /* Prevent button from shrinking */
+    }
+    .reset-btn {
+      background: #ef4444; /* Red color for reset */
+      font-size: 1.2rem;
+      line-height: 1;
+      font-weight: 900;
+    }
+    .send-btn:disabled, .reset-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .recipe-card {
+      background: #f8fafc;
+      border: 1.5px solid #e0e7ef;
+      border-radius: 16px;
+      padding: 18px 18px 12px 18px;
+      margin: 10px 0;
+      font-size: 15px;
+      color: #222;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .recipe-card h4 {
+      margin: 0 0 8px 0;
+      font-size: 1.1em;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      color: #6366f1;
+    }
+    .recipe-card ul, .recipe-card ol {
+      margin: 0 0 10px 18px;
+      padding: 0;
+    }
+    .recipe-card li {
+      margin-bottom: 3px;
+    }
+    .ingredient-icon { /* New style for ingredient icons */
+        display: inline-block;
+        width: 24px; /* Adjust size as needed */
+        height: 24px; /* Adjust size as needed */
+        text-align: center;
+        line-height: 24px;
+        font-size: 18px; /* Emoji size */
+        margin-right: 8px;
+        vertical-align: middle;
+        border-radius: 4px; /* Slightly rounded corners */
+    }
+    .disclaimer {
+      font-size: 0.8em;
+      color: #666;
+      padding: 10px 24px;
+      text-align: center;
+      background: #f0f0f0;
+      border-top: 1px solid #ddd;
+    }
+
+    /* Admin Tab Styles */
+    .admin-section h3 {
+      font-family: 'Montserrat', sans-serif;
+      color: #333;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+    .admin-section label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #555;
+    }
+    .admin-section textarea {
+      width: calc(100% - 20px);
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      min-height: 120px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      resize: vertical;
+    }
+    .admin-section button {
+      background: #6366f1;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .admin-section button:hover {
+      background: #4f46e5;
+    }
+    .analytics-data {
+      background: #f8fafc;
+      border: 1px solid #e0e7ef;
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #333;
+    }
+    .analytics-data p {
+      margin: 5px 0;
+    }
+    .analytics-data strong {
+      color: #6366f1;
+    }
+    #inventoryDisplay {
+      white-space: pre-wrap; /* Preserve line breaks */
+      background: #f0f4f7;
+      border: 1px dashed #cce0ec;
+      padding: 10px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #444;
+    }
+
+    @media (max-width: 600px) {
+      .container { max-width: 99%; margin: 8px; border-radius: 14px; }
+      .welcome, .chat-container, .input-container, .suggestion-list, .quick-occasions, .tab-content { padding-left: 8px; padding-right: 8px; }
+      .tab-nav button { font-size: 0.9rem; padding: 12px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main">
+    <div class="tab-nav">
+      <button class="tab-button active" onclick="showTab('customerBot')">Customer Bot</button>
+      <button class="tab-button" onclick="showTab('storeAdmin')">Store Admin</button>
+    </div>
+
+      <div class="quick-occasions" id="quickOccasions">
+        <button class="occasion-btn" onclick="sendOccasion('BBQ')">🔥 BBQ</button>
+        <button class="occasion-btn" onclick="sendOccasion('Birthday')">🎂 Birthday</button>
+        <button class="occasion-btn" onclick="sendOccasion('Date Night')">💖 Date Night</button>
+        <button class="occasion-btn" onclick="sendOccasion('Night In')">🛋️ Night In</button>
+        <button class="occasion-btn" onclick="sendOccasion('Mocktails')">🌿 Mocktails</button>
+        <button class="occasion-btn" onclick="sendOccasion('Seafood')">🐟 Seafood</button>
+      </div>
+      <div class="chat-container" id="chatContainer" aria-live="polite" aria-label="Chat"></div>
+      <div class="suggestion-list" id="suggestionList"></div>
+      <div class="input-container">
+        <input type="text" class="input-field" id="messageInput" placeholder="What are you in the mood for?" aria-label="Type your message" onkeypress="handleKeyPress(event)" spellcheck="true" disabled>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send Message" aria-label="Send Message" disabled>➤</button>
+        <button class="reset-btn" id="resetBtn" onclick="resetConversation()" title="Reset Conversation" aria-label="Reset Conversation" disabled>⟳</button>
+      </div>
+      <div class="disclaimer">
+        You must be of legal drinking age to purchase and consume alcoholic beverages. Please drink responsibly.
+      </div>
+    </div>
+
+    <div id="storeAdmin" class="tab-content">
+      <div class="admin-section">
+        <h3>Inventory Management (Simulated)</h3>
+        <p>This is where a store owner would upload or manage their product inventory. In a real application, this would sync with your POS system or a backend database.</p>
+        <label for="inventoryInput">Paste/Edit Inventory (one item per line, e.g., "Product Name | Category | Stock | Price (Optional)"):</label>
+        <textarea id="inventoryInput" placeholder="Vodka
+Gin
+Merlot
+Cabernet Sauvignon
+IPA Beer
+Lime Juice"></textarea>
+        <button onclick="loadInventory()">Save/Load Inventory</button>
+
+        <h3>Current Simulated Inventory:</h3>
+        <pre id="inventoryDisplay"></pre>
+
+        <h3 style="margin-top: 30px;">Analytics Dashboard (Simulated)</h3>
+        <p>This section would display real-time insights from customer interactions. In a real application, this data would come from a backend database.</p>
+        <div class="analytics-data">
+          <p><strong>Total Conversations:</strong> <span id="totalConversations">0</span></p>
+          <p><strong>Most Suggested Drink Category:</strong> <span id="mostSuggestedCategory">N/A</span></p>
+          <p><strong>Most Popular Taste Preference:</strong> <span id="mostPopularTaste">N/A</span></p>
+          <p><strong>Top 3 Selected Drinks:</strong> <span id="topSelectedDrinks">N/A</span></p>
+          <p><strong>Queries about Promotions:</strong> <span id="promoQueries">0</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.onload = () => { document.getElementById('welcomeMsg').focus(); showTab('customerBot'); };
+    let apiKey = '';
+    let lastDrinks = [];
+    let userTaste = null;
+    let currentConversationState = 'initial'; // 'initial', 'awaiting_taste', 'in_conversation'
+    let originalQueryAfterTastePrompt = null; // Stores query if bot needs to ask for taste first
+
+    // --- Simulated Inventory (persists in localStorage for this demo) ---
+    const defaultStoreInventoryData = [
+        "Absolut Vodka (700ml) | Spirit | 15 | $35.99",
+        "Bombay Sapphire Gin (1L) | Spirit | 10 | $42.50",
+        "Jack Daniel's Tennessee Whiskey (700ml) | Spirit | 20 | $49.00",
+        "Patrón Silver Tequila (750ml) | Spirit | 8 | $65.00",
+        "Captain Morgan Spiced Rum (700ml) | Spirit | 12 | $32.00",
+        "Casillero del Diablo Cabernet Sauvignon (750ml) | Red Wine | 30 | $14.99",
+        "Oyster Bay Sauvignon Blanc (750ml) | White Wine | 25 | $17.50",
+        "Yellow Tail Merlot (750ml) | Red Wine | 40 | $10.00",
+        "Santa Margherita Pinot Grigio (750ml) | White Wine | 18 | $22.00",
+        "Veuve Clicquot Brut Champagne (750ml) | Sparkling Wine | 5 | $75.00",
+        "Peroni Nastro Azzurro Lager (6-pack) | Beer | 50 | $18.99",
+        "Stone & Wood Pacific Ale (6-pack) | Beer | 35 | $22.00",
+        "Guinness Draught Stout (4-pack cans) | Beer | 20 | $16.50",
+        "Aperol Aperitivo (700ml) | Liqueur | 7 | $29.00",
+        "Campari (750ml) | Liqueur | 6 | $28.50",
+        "Cointreau Orange Liqueur (700ml) | Liqueur | 9 | $45.00",
+        "Angostura Bitters (200ml) | Mixer | 10 | $15.00",
+        "Fever-Tree Premium Indian Tonic Water (4-pack) | Mixer | 60 | $8.00",
+        "Bundaberg Ginger Beer (4-pack) | Mixer | 45 | $9.50",
+        "Lyre's Italian Spritz (Non-alcoholic) | Non-alcoholic | 10 | $30.00",
+        "Seedlip Garden 108 (Non-alcoholic) | Non-alcoholic | 5 | $40.00",
+        "Coca-Cola (6-pack) | Soft Drink | 100 | $7.00",
+        "Fresh Limes (Bag) | Garnish/Ingredient | 20 | $4.00",
+        "Fresh Lemons (Bag) | Garnish/Ingredient | 18 | $4.50",
+        "Simple Syrup (House-made) | Mixer | 10 | $5.00"
+    ];
+
+    let storeInventory = JSON.parse(localStorage.getItem('simulatedInventory')) || defaultStoreInventoryData;
+
+    // Simulated Analytics Data (persists in localStorage for this demo)
+    let analytics = JSON.parse(localStorage.getItem('simulatedAnalytics')) || {
+        totalConversations: 0,
+        suggestedCategories: {},
+        popularTastes: {},
+        selectedDrinks: {},
+        promoQueries: 0
+    };
+
+    // --- Emoji Mapping for Ingredients ---
+    const ingredientEmojis = {
+        'lemon': '🍋', 'lime': '🟢', 'sugar': '🍚', 'mint': '🌿', 'ice': '🧊', 'water': '💧', 'vodka': '🍸',
+        'gin': '🍸', 'rum': '🥃', 'tequila': '🌵', 'whiskey': '🥃', 'orange': '🍊', 'cherry': '🍒', 'salt': '🧂',
+        'cinnamon': '🍂', 'honey': '🍯', 'ginger': '🫚', 'coffee': '☕', 'milk': '🥛', 'cream': '🍦', 'soda': '🥤',
+        'cola': '🥤', 'tonic': '💧', 'bitters': '🌿', 'vermouth': '🍷', 'wine': '🍷', 'beer': '🍺', 'apple': '🍎',
+        'cranberry': '🔴', 'pineapple': '🍍', 'coconut': '🥥', 'egg': '🥚', 'nutmeg': '🌰', 'clove': '🌶️',
+        'brandy': '🍷', 'champagne': '🍾', 'prosecco': '🍾', 'sparkling wine': '🍾', 'olive': '🫒', 'strawberry': '🍓',
+        'cucumber': '🥒', 'grapefruit': '🍊', 'peach': '🍑', 'banana': '🍌', 'vanilla': '🍦', 'chocolate': '🍫'
+    };
+    // --- End Emoji Mapping ---
+
+    function updateAnalytics(type, data) {
+        if (type === 'conversation') {
+            analytics.totalConversations++;
+        } else if (type === 'suggestedCategory' && data) {
+            analytics.suggestedCategories[data] = (analytics.suggestedCategories[data] || 0) + 1;
+        } else if (type === 'popularTaste' && data) {
+            analytics.popularTastes[data] = (analytics.popularTastes[data] || 0) + 1;
+        } else if (type === 'selectedDrink' && data) {
+            analytics.selectedDrinks[data] = (analytics.selectedDrinks[data] || 0) + 1;
+        } else if (type === 'promoQuery') {
+            analytics.promoQueries++;
+        }
+        localStorage.setItem('simulatedAnalytics', JSON.stringify(analytics));
+        renderAnalytics(); // Update display
+    }
+
+    function renderAnalytics() {
+        document.getElementById('totalConversations').textContent = analytics.totalConversations;
+
+        const getTop = (obj) => {
+            const sorted = Object.entries(obj).sort(([,a],[,b]) => b - a);
+            return sorted.length > 0 ? sorted[0][0] : 'N/A';
+        };
+        const getTopN = (obj, n) => {
+            const sorted = Object.entries(obj).sort(([,a],[,b]) => b - a).slice(0, n);
+            return sorted.length > 0 ? sorted.map(([key, value]) => `${key} (${value})`).join(', ') : 'N/A';
+        };
+
+        document.getElementById('mostSuggestedCategory').textContent = getTop(analytics.suggestedCategories);
+        document.getElementById('mostPopularTaste').textContent = getTop(analytics.popularTastes);
+        document.getElementById('topSelectedDrinks').textContent = getTopN(analytics.selectedDrinks, 3);
+        document.getElementById('promoQueries').textContent = analytics.promoQueries;
+    }
+
+    // Initialize inventory display on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('simulatedInventory')) {
+            document.getElementById('inventoryInput').value = defaultStoreInventoryData.join('\n');
+        } else {
+            document.getElementById('inventoryInput').value = storeInventory.join('\n');
+        }
+        document.getElementById('inventoryDisplay').textContent = storeInventory.join('\n');
+        renderAnalytics();
+    });
+
+    function loadInventory() {
+        const input = document.getElementById('inventoryInput').value;
+        storeInventory = input.split('\n').map(item => item.trim()).filter(item => item !== '');
+        localStorage.setItem('simulatedInventory', JSON.stringify(storeInventory));
+        document.getElementById('inventoryDisplay').textContent = storeInventory.join('\n');
+        alert('Simulated Inventory Updated! Bot will now use this inventory for suggestions.');
+        updateSystemPromptWithInventory();
+    }
+
+    // --- System Prompt Definition ---
+    // This prompt is crucial for guiding the AI's behavior.
+    function getSystemPrompt() {
+        return `You are a helpful and friendly drink suggestion assistant for a liquor store. Your goal is to recommend drinks to customers and provide information about them.
+        
+        The store's current inventory is:
+        ${storeInventory.map(item => `- ${item}`).join('\n')}
+
+        Here are your rules:
+        1.  **Drink Suggestions:** When asked for suggestions, always suggest 3 drinks as a JSON array of objects.
+            For each suggested drink in the JSON array:
+            -   The 'name' key should be the common name of the drink (e.g., "Margarita", "Cabernet Sauvignon", "Gin & Tonic", "Absolut Vodka").
+            -   The 'desc' key should contain the **exact full product line from the inventory list above** that corresponds to the suggestion, including its size, category, stock, and price if present. If it's a cocktail/mocktail, the 'desc' should describe the drink and clearly list the key ingredients from the inventory needed (e.g., "Classic refreshing cocktail. Requires Rum, Lime, Mint, Soda from inventory.").
+            Prioritize suggesting items from the provided inventory list. If a user asks for a specific drink not in stock, politely mention it's unavailable and suggest a similar alternative that *is* in stock from the provided list.
+        2.  **Recipe/Serving Information:**
+            -   If the user asks for a recipe for a traditional mixed drink (cocktail or mocktail), provide it clearly with "Ingredients:" and "Instructions:" sections. Use bullet points for ingredients and numbered steps for instructions.
+            -   If the user asks for a recipe/details for a simple, unmixed beverage (like beer, wine, or straight spirits), instead of a recipe, provide serving suggestions, tasting notes, and food pairings for that beverage. Do not provide a "recipe" for these.
+        3.  **Taste Preferences:** Always try to get a taste preference from the user (e.g., sweet, dry, fruity, spicy, refreshing, light, strong). If you don't know their preference and they haven't given a specific drink, ask them politely. Remember their preference for the current session and use it to tailor future suggestions. If they state a preference, acknowledge it and then proceed with their request.
+        4.  **Follow-up Questions & Pairings:** After providing a suggestion or a recipe/serving info, you may politely ask if they would like suggestions for food pairings, complementary items, or other similar drinks. When suggesting food pairings or complementary items, please list them using numbered points or bullet points for clarity.
+        5.  **Promotions:** Encourage customers to ask about current store promotions.
+        6.  **Out-of-Scope:** If the user asks something not related to drinks or the store, politely say you only answer drink-related questions.
+        7.  **Tone & Responsibility:** Maintain a helpful, friendly, and responsible tone. Remind customers to drink responsibly.
+        8.  **Output Format:** If suggesting drinks, *always* try to include the JSON array with 'name' and 'desc'. For recipes, clearly label sections. For other general chat, just use plain text.
+        `;
+    }
+
+    let conversationHistory = []; // Starts empty, will be initialized with system prompt
+
+    function resetConversation() {
+      conversationHistory = [{ role: "system", content: getSystemPrompt() }];
+      document.getElementById('chatContainer').innerHTML = '';
+      clearDrinkSuggestions();
+      userTaste = null;
+      currentConversationState = 'initial';
+      originalQueryAfterTastePrompt = null;
+      addBubble('👋 Hi! I can suggest the perfect drink for you. What are you in the mood for?', 'bot');
+      document.getElementById('messageInput').focus();
+      // Optionally reset analytics for current session if you want, but typically analytics persist
+      // analytics = JSON.parse(localStorage.getItem('simulatedAnalytics')) || { ... };
+      // renderAnalytics();
+    }
+
+    function updateSystemPromptWithInventory() {
+        // This function is now responsible for setting the *initial* system prompt
+        // and also for updating it if inventory changes during a session.
+        if (conversationHistory.length === 0) {
+            resetConversation(); // Initialize if first time
+        } else {
+            // Update the system prompt in the existing history if inventory changes
+            conversationHistory[0].content = getSystemPrompt();
+        }
+    }
+
+    updateSystemPromptWithInventory(); // Call on load to set initial prompt
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+      document.querySelector(`button[onclick="showTab('${tabId}')"]`).classList.add('active');
+    }
+
+    // --- Robust Recipe Parsing ---
+    function parseRecipeOrServingInfo(text) {
+        let title = '';
+        let ingredients = [];
+        let instructions = [];
+        let servingSuggestions = [];
+        let tastingNotes = [];
+        let foodPairings = [];
+        let isMixedDrinkRecipe = false;
+
+        // Determine if it's a mixed drink recipe or serving suggestions
+        if (text.toLowerCase().includes('ingredients:') || text.toLowerCase().includes('instructions:') || text.toLowerCase().includes('directions:')) {
+            isMixedDrinkRecipe = true;
+        }
+
+        // Try to extract title (more robust)
+        const titleMatch = text.match(/(?:(?:here's|a|the|an)\s+)?(.+?)(?:\s+recipe)?(?:\s+for)?(?:\s+serving suggestions)?(?:\s+and tasting notes)?(?:[:.]?\s*)?\n*(?:Ingredients:|Instructions:|Directions:|Serving Suggestions:|Tasting Notes:)/i);
+        if (titleMatch && titleMatch[1]) {
+            title = titleMatch[1].trim();
+            title = title.replace(/recipe\s*(?:for)?|serving suggestions(?:\s+and tasting notes)?/i, '').trim();
+            if (title.endsWith(':')) title = title.slice(0, -1);
+        }
+
+        if (isMixedDrinkRecipe) {
+            // Extract Ingredients
+            const ingredientsBlockMatch = text.match(/Ingredients:(.*?)(?:Instructions:|Directions:|$)/is);
+            if (ingredientsBlockMatch && ingredientsBlockMatch[1]) {
+                ingredients = ingredientsBlockMatch[1].split(/[\n\r]+/)
+                    .map(s => s.trim())
+                    .filter(s => s && !/^-?\s*$/i.test(s) && !/^ingredients:?$/i.test(s));
+            }
+            // Extract Instructions
+            const instructionsBlockMatch = text.match(/(?:Instructions:|Directions:)(.*)/is);
+            if (instructionsBlockMatch && instructionsBlockMatch[1]) {
+                instructions = instructionsBlockMatch[1].split(/[\n\r]+(?=\d+\.\s|[-•]\s|\S)/)
+                    .map(s => s.replace(/^\d+\.\s*|[-•]\s*/, '').trim())
+                    .filter(s => s && !/^instructions:?|directions:?$/i.test(s));
+            }
+        } else {
+            // Extract Serving Suggestions
+            const servingMatch = text.match(/Serving(?: Suggestions)?:(.*?)(?:Tasting Notes:|Food Pairings:|$)/is);
+            if (servingMatch && servingMatch[1]) {
+                servingSuggestions = servingMatch[1].split(/[\n\r]+/)
+                    .map(s => s.replace(/^\d+\.\s*|[-•]\s*/, '').trim())
+                    .filter(s => s);
+            }
+            // Extract Tasting Notes
+            const tastingMatch = text.match(/Tasting Notes?:(.*?)(?:Food Pairings:|$)/is);
+            if (tastingMatch && tastingMatch[1]) {
+                tastingNotes = tastingMatch[1].split(/[\n\r]+/)
+                    .map(s => s.replace(/^\d+\.\s*|[-•]\s*/, '').trim())
+                    .filter(s => s);
+            }
+            // Extract Food Pairings (can exist independently or after serving/tasting)
+            const pairingMatch = text.match(/Food Pairings?:(.*)/is);
+            if (pairingMatch && pairingMatch[1]) {
+                foodPairings = pairingMatch[1].split(/[\n\r]+/)
+                    .map(s => s.replace(/^\d+\.\s*|[-•]\s*/, '').trim())
+                    .filter(s => s);
+            }
+        }
+        
+        if (!title && (ingredients.length || instructions.length || servingSuggestions.length || tastingNotes.length || foodPairings.length)) {
+            title = isMixedDrinkRecipe ? "Drink Recipe" : "Drink Information";
+        }
+
+        return { title, ingredients, instructions, servingSuggestions, tastingNotes, foodPairings, isMixedDrinkRecipe };
+    }
+
+    function renderRecipeCard(data) {
+      if (!data || (!data.ingredients.length && !data.instructions.length && !data.servingSuggestions.length && !data.tastingNotes.length && !data.foodPairings.length)) return '';
+
+      const getIngredientEmoji = (ingredientText) => {
+          const lowerIngredient = ingredientText.toLowerCase();
+          for (const keyword in ingredientEmojis) {
+              if (lowerIngredient.includes(keyword)) {
+                  return `<span class="ingredient-icon">${ingredientEmojis[keyword]}</span>`;
+              }
+          }
+          return '';
+      };
+
+      let content = '';
+      if (data.isMixedDrinkRecipe) {
+          content += data.ingredients.length ? `<strong>Ingredients:</strong><ul>${data.ingredients.map(i => `<li>${getIngredientEmoji(i)}${i}</li>`).join('')}</ul>` : '';
+          content += data.instructions.length ? `<strong>Instructions:</strong><ol>${data.instructions.map(i => `<li>${i}</li>`).join('')}</ol>` : '';
+      } else {
+          content += data.servingSuggestions.length ? `<strong>Serving Suggestions:</strong><ul>${data.servingSuggestions.map(s => `<li>${s}</li>`).join('')}</ul>` : '';
+          content += data.tastingNotes.length ? `<strong>Tasting Notes:</strong><ul>${data.tastingNotes.map(t => `<li>${t}</li>`).join('')}</ul>` : '';
+          content += data.foodPairings.length ? `<strong>Food Pairings:</strong><ul>${data.foodPairings.map(f => `<li>${f}</li>`).join('')}</ul>` : '';
+      }
+
+      return `
+        <div class="recipe-card">
+          <h4>${data.title}</h4>
+          ${content}
+        </div>
+      `;
+    }
+
+    // --- UX Polish: Typing Indicator ---
+    function addBubble(txt, type='bot', removeThinking=true) {
+      const chat = document.getElementById('chatContainer');
+      if (removeThinking) {
+        document.querySelectorAll('.bubble.bot.thinking').forEach(b => b.remove());
+      }
+      const div = document.createElement('div');
+      div.className = 'bubble ' + type;
+
+      if (type === 'bot') {
+        if (txt === 'thinking') { // Special 'thinking' state
+          div.className += ' thinking';
+          div.innerHTML = '<em>Bot is typing...</em>';
+        } else {
+          const recipeData = parseRecipeOrServingInfo(txt);
+          // Only render as a recipe card if we detected a structured recipe or serving info
+          if (recipeData && (recipeData.ingredients.length || recipeData.instructions.length || recipeData.servingSuggestions.length || recipeData.tastingNotes.length || recipeData.foodPairings.length) &&
+              (txt.includes('Ingredients:') || txt.includes('Instructions:') || txt.includes('Serving Suggestions:') || txt.includes('Tasting Notes:') || txt.includes('Food Pairings:'))) {
+            div.innerHTML = renderRecipeCard(recipeData);
+            // Append any trailing text that is not part of the structured sections
+            const trailingTextMatch = txt.match(/(?:Ingredients:|Instructions:|Directions:|Serving Suggestions:|Tasting Notes:|Food Pairings:).*?([\s\S]*)$/is);
+            if (trailingTextMatch && trailingTextMatch[1]) {
+                let afterStructuredContent = trailingTextMatch[1].replace(/^(.*(?:Ingredients:|Instructions:|Directions:|Serving Suggestions:|Tasting Notes:|Food Pairings:).*?)/is, '').trim();
+                // Filter out lines that look like list items or section headers
+                afterStructuredContent = afterStructuredContent.split('\n').filter(line => 
+                    !/^\d+\.\s*|\*\*\s*•\s*\*|Ingredients:|Instructions:|Directions:|Serving Suggestions:|Tasting Notes:|Food Pairings:/i.test(line.trim())
+                ).join('\n').trim();
+
+                if (afterStructuredContent) {
+                    div.innerHTML += `<div style="margin-top:10px;">${afterStructuredContent}</div>`;
+                }
+            }
+          } else {
+            // New logic for general text, especially for lists
+            let formattedText = txt.replace(/(\d+\.\s*\*\*.*?\*\*:\s*|\*\*\s*•\s*\*\*.*?\*\*:\s*|\n\d+\.\s*|\n-\s*)/g, '<br>$1').trim();
+            if (formattedText.startsWith('<br>')) formattedText = formattedText.substring(4);
+            div.innerHTML = formattedText;
+          }
+        }
+      } else {
+        div.innerHTML = txt;
+      }
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function showDrinkSuggestions(drinks) {
+      const list = document.getElementById('suggestionList');
+      list.innerHTML = '';
+      drinks.forEach((drink, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'drink-btn';
+        btn.textContent = drink.name;
+        btn.onclick = () => selectDrink(idx);
+        list.appendChild(btn);
+      });
+      lastDrinks = drinks;
+    }
+
+    function showActionButtons(drinkName) {
+        const list = document.getElementById('suggestionList');
+        list.innerHTML = '';
+
+        const recipeBtn = document.createElement('button');
+        recipeBtn.className = 'drink-btn';
+        recipeBtn.textContent = `Recipe / Info for ${drinkName}`;
+        recipeBtn.onclick = () => sendActionRequest(`Tell me about ${drinkName}`);
+        list.appendChild(recipeBtn);
+
+        const pairingBtn = document.createElement('button');
+        pairingBtn.className = 'drink-btn';
+        pairingBtn.textContent = `Food Pairings for ${drinkName}`;
+        pairingBtn.onclick = () => sendActionRequest(`What food pairs well with ${drinkName}?`);
+        list.appendChild(pairingBtn);
+
+        const otherSuggestionBtn = document.createElement('button');
+        otherSuggestionBtn.className = 'drink-btn';
+        otherSuggestionBtn.textContent = `Suggest another drink`;
+        otherSuggestionBtn.onclick = () => sendActionRequest(`Can you suggest another drink?`);
+        list.appendChild(otherSuggestionBtn);
+    }
+
+    function sendActionRequest(requestText) {
+        document.getElementById('messageInput').value = requestText;
+        sendMessage();
+    }
+
+    function clearDrinkSuggestions() {
+      document.getElementById('suggestionList').innerHTML = '';
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function saveApiKey() {
+      const key = prompt('Enter your OpenAI API key (starts with sk-). IMPORTANT: In a real product, this would be handled securely on a backend server, not exposed on the frontend.');
+      if (!key || !key.startsWith('sk-') || key.length < 20) {
+        alert('Please enter a valid OpenAI API key (starts with sk-) to proceed.');
+        return;
+      }
+      apiKey = key;
+      document.getElementById('messageInput').disabled = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('resetBtn').disabled = false; // Enable reset button
+      document.getElementById('messageInput').focus();
+    }
+    setTimeout(saveApiKey, 400);
+
+    function sendOccasion(occasion) {
+      document.getElementById('messageInput').value = `Suggest drinks for a ${occasion}`;
+      sendMessage();
+    }
+
+    function extractTaste(text) {
+      const lowerText = text.toLowerCase();
+      const tastes = ['sweet', 'dry', 'bitter', 'fruity', 'spicy', 'sour', 'herbal', 'smoky', 'refreshing', 'rich', 'light', 'strong'];
+      const negativePrefixes = ['non-', 'not ', 'un-'];
+
+      for (let t of tastes) {
+        for (let prefix of negativePrefixes) {
+          if (lowerText.includes(prefix + t)) {
+            return `not ${t}`;
+          }
+        }
+        if (lowerText.includes(t)) {
+          return t;
+        }
+      }
+      return null;
+    }
+
+    function extractDrinksFromText(text) {
+      const match = text.match(/\[\s*{[\s\S]*?}\s*\]/);
+      if (match) {
+        try {
+          const arr = JSON.parse(match[0]);
+          if (Array.isArray(arr) && arr.length && arr.every(item => item.name && item.desc)) return arr;
+        } catch (e) {
+          console.error("Failed to parse JSON from AI response:", e);
+        }
+      }
+      return null;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const value = input.value.trim();
+      if (!value || !apiKey) {
+        if (!apiKey) alert('Please enter your OpenAI API key.');
+        return;
+      }
+      addBubble(value, 'user');
+      input.value = '';
+      addBubble('thinking', 'bot'); // Show typing indicator
+      clearDrinkSuggestions();
+
+      const userQueryIsTaste = extractTaste(value);
+      const isFollowUp = value.toLowerCase().includes('pair') || value.toLowerCase().includes('recipe') || value.toLowerCase().includes('how to make') || value.toLowerCase().includes('tell me about');
+
+      // Update userTaste if new taste preference is detected
+      if (userQueryIsTaste) {
+          userTaste = userQueryIsTaste;
+          updateAnalytics('popularTaste', userTaste);
+      }
+      
+      updateAnalytics('conversation');
+      if (value.toLowerCase().includes('promotion') || value.toLowerCase().includes('deal')) {
+        updateAnalytics('promoQuery');
+      }
+
+      // --- Refined Conversational Flow Logic ---
+      if (currentConversationState === 'initial' && !userTaste && !isFollowUp) {
+          // First query, no taste known. Ask for taste preference.
+          originalQueryAfterTastePrompt = value;
+          currentConversationState = 'awaiting_taste';
+          addBubble("Before I suggest drinks, do you have a taste preference? (e.g., sweet, dry, fruity, refreshing, etc.)", "bot", true); // Remove thinking bubble
+          return;
+      } else if (currentConversationState === 'awaiting_taste') {
+          // User has responded after being prompted for taste
+          if (userQueryIsTaste) {
+              // User provided a valid taste
+              addBubble(`Thanks! I'll keep "${userTaste}" in mind.`, "bot");
+              currentConversationState = 'in_conversation'; // Move to general conversation
+              await processAiRequest(originalQueryAfterTastePrompt || value, userTaste); // Process original query or current value
+              originalQueryAfterTastePrompt = null; // Clear stored query
+          } else {
+              // User did not provide a valid taste, re-prompt or fallback
+              addBubble("I didn't quite catch your taste preference. Can you tell me if you prefer something sweet, dry, fruity, etc.? Or, if you'd rather not say, I can just proceed with your request.", "bot", true);
+              // Do NOT change state, keep 'awaiting_taste' until a valid taste or clear intent to proceed.
+              // We could also add a button here to "Proceed without preference".
+          }
+          return;
+      }
+
+      // If we reach here, it's a regular query, or a follow-up, or taste is already known.
+      await processAiRequest(value, userTaste);
+    }
+
+    // --- Advanced Error Handling: Retry Logic ---
+    async function processAiRequest(query, currentTaste, retries = 3) {
+        let userMsg = query;
+        if (currentTaste && !query.toLowerCase().includes(currentTaste) && !query.toLowerCase().includes('my taste preference is')) {
+            userMsg = `${query} (My taste preference is: ${currentTaste})`;
+        }
+        
+        const currentConversation = [...conversationHistory];
+        currentConversation.push({ role: "user", content: userMsg });
+
+        try {
+            const res = await fetch("https://api.openai.com/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + apiKey
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o", // Using a powerful model for better NLU
+                    messages: currentConversation,
+                    temperature: 0.7, // Balances creativity and consistency
+                    max_tokens: 500 // Increased token limit for longer responses like recipes
+                })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("OpenAI API Error:", errorData);
+                if (res.status === 429 && retries > 0) { // Rate limit error
+                    const retryAfter = res.headers.get('Retry-After') || '5'; // Default 5 seconds
+                    addBubble(`Looks like I'm a bit busy! Retrying in ${retryAfter} seconds...`, 'bot', true);
+                    await new Promise(resolve => setTimeout(resolve, parseInt(retryAfter) * 1000));
+                    return processAiRequest(query, currentTaste, retries - 1); // Retry
+                } else if (res.status === 401) { // Unauthorized (bad API key)
+                    addBubble("It looks like your OpenAI API key is invalid or expired. Please refresh the page and enter a valid key.", 'bot', true);
+                    return;
+                } else if (res.status >= 500) { // Server error
+                    addBubble("Our drink suggestion service is experiencing technical difficulties. Please try again in a few moments.", 'bot', true);
+                    return;
+                } else {
+                    addBubble(`An unexpected error occurred: ${errorData.error?.message || res.statusText}. Please try again.`, 'bot', true);
+                    return;
+                }
+            }
+
+            const data = await res.json();
+            document.querySelectorAll('.bubble.bot.thinking').forEach(b => b.remove()); // Remove thinking bubble
+            let text = data.choices[0].message.content.trim();
+            conversationHistory.push({ role: "assistant", content: text });
+
+            let drinks = extractDrinksFromText(text);
+            if (Array.isArray(drinks) && drinks.length) {
+                addBubble('Here are some suggestions for you:', 'bot');
+                showDrinkSuggestions(drinks);
+                drinks.forEach(d => {
+                    let category = 'Misc';
+                    if (d.desc && d.desc.toLowerCase().includes('spirit')) category = 'Spirit';
+                    else if (d.desc && d.desc.toLowerCase().includes('wine')) category = 'Wine';
+                    else if (d.desc && d.desc.toLowerCase().includes('beer')) category = 'Beer';
+                    else if (d.name.toLowerCase().includes('cocktail') || d.name.toLowerCase().includes('mojito') || d.name.toLowerCase().includes('margarita')) category = 'Cocktail';
+                    else if (d.name.toLowerCase().includes('mocktail')) category = 'Mocktail';
+                    updateAnalytics('suggestedCategory', category);
+                });
+                lastDrinks = drinks;
+            } else {
+                addBubble(text, 'bot'); // This will trigger recipe card rendering if format matches
+            }
+        } catch (err) {
+            console.error("API Fetch Error:", err);
+            document.querySelectorAll('.bubble.bot.thinking').forEach(b => b.remove()); // Remove thinking bubble
+            addBubble("It seems like there's a problem connecting to the service. Please check your internet connection.", 'bot');
+        } finally {
+            currentConversationState = 'in_conversation'; // Ensure state is 'in_conversation' after processing
+        }
+    }
+
+    async function selectDrink(idx) {
+      clearDrinkSuggestions();
+      const drink = lastDrinks[idx];
+      addBubble(`👍 <b>${drink.name}</b><br><small>${drink.desc}</small>`, 'user');
+      updateAnalytics('selectedDrink', drink.name);
+      
+      addBubble(`Great choice! What else would you like to know about the ${drink.name}?`, 'bot');
+      showActionButtons(drink.name);
+    }
+  </script>
+</body>
+</html>
